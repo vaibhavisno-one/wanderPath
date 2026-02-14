@@ -7,10 +7,6 @@ import ThemeCard from "@/components/ThemeCard";
 import Button from "@/components/Button";
 import { themeOptions } from "@/lib/mockData";
 
-/**
- * Route Selection Page
- * Start/end point selection, theme selection, and discover button
- */
 export default function RoutePage() {
     const router = useRouter();
     const [startPoint, setStartPoint] = useState("");
@@ -29,7 +25,7 @@ export default function RoutePage() {
 
     const handleDiscover = () => {
         if (isFormValid) {
-            // Navigate to results with query params
+
             router.push(
                 `/route/results?start=${encodeURIComponent(startPoint)}&end=${encodeURIComponent(endPoint)}&themes=${selectedThemes.join(",")}`
             );
@@ -39,7 +35,6 @@ export default function RoutePage() {
     return (
         <div className="pt-24 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-[var(--color-offwhite)] to-[var(--color-stone)]/30">
             <div className="container">
-                {/* Header */}
                 <div className="max-w-2xl mx-auto text-center mb-12">
                     <h1 className="font-[var(--font-heading)] text-3xl md:text-4xl font-medium text-[var(--color-charcoal)] mb-4">
                         Plan your journey
@@ -49,16 +44,14 @@ export default function RoutePage() {
                     </p>
                 </div>
 
-                {/* Form Container */}
-                <div className="max-w-2xl mx-auto">
-                    {/* Location Selection */}
-                    <div className="bg-white rounded-[var(--radius-xl)] p-6 md:p-8 shadow-sm border border-[var(--color-sand)]/50 mb-8">
-                        <h2 className="font-[var(--font-heading)] text-xl font-medium text-[var(--color-charcoal)] mb-6">
-                            Where would you like to explore?
-                        </h2>
+                {/* Start Point */}
+                <div className="bg-white rounded-[var(--radius-xl)] p-6 md:p-8 shadow-sm border border-[var(--color-sand)]/50 mb-8">
+                    <h2 className="font-[var(--font-heading)] text-xl font-medium text-[var(--color-charcoal)] mb-6">
+                        Where would you like to explore?
+                    </h2>
 
+                    <div className="space-y-6">
                         <div className="space-y-6">
-                            {/* Start Point */}
                             <LocationInput
                                 label="Starting Point"
                                 icon="start"
@@ -67,7 +60,7 @@ export default function RoutePage() {
                                 onChange={(e) => setStartPoint(e.target.value)}
                             />
 
-                            {/* Visual Connector */}
+
                             <div className="flex items-center justify-center py-2">
                                 <div className="flex flex-col items-center gap-1">
                                     <div className="w-0.5 h-4 bg-[var(--color-sand)]" />
@@ -90,7 +83,7 @@ export default function RoutePage() {
                                 </div>
                             </div>
 
-                            {/* End Point */}
+
                             <LocationInput
                                 label="Destination"
                                 icon="end"
@@ -101,7 +94,7 @@ export default function RoutePage() {
                         </div>
                     </div>
 
-                    {/* Theme Selection */}
+
                     <div className="bg-white rounded-[var(--radius-xl)] p-6 md:p-8 shadow-sm border border-[var(--color-sand)]/50 mb-8">
                         <h2 className="font-[var(--font-heading)] text-xl font-medium text-[var(--color-charcoal)] mb-2">
                             What interests you?
@@ -110,7 +103,6 @@ export default function RoutePage() {
                             Select one or more themes to personalize your route
                         </p>
 
-                        {/* Desktop: 3-column grid; Mobile: single-column full-width */}
                         <div className="grid md:grid-cols-3 gap-4">
                             {themeOptions.map((theme) => (
                                 <ThemeCard
@@ -123,8 +115,6 @@ export default function RoutePage() {
                         </div>
                     </div>
 
-                    {/* Discover Button */}
-                    {/* Desktop: centered medium-width; Mobile: full-width */}
                     <div className="flex justify-center">
                         <Button
                             size="lg"
@@ -150,7 +140,7 @@ export default function RoutePage() {
                         </Button>
                     </div>
 
-                    {/* Helper Text */}
+
                     {!isFormValid && (
                         <p className="text-center text-sm text-[var(--color-light-muted)] mt-4">
                             Enter both starting point and destination to continue

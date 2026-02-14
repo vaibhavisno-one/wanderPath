@@ -1,9 +1,3 @@
-/**
- * Mock Data for WanderPath
- * Contains sample data for routes, stops, and carousel images
- */
-
-// Carousel images for home page
 export const carouselImages = [
     {
         src: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80",
@@ -27,7 +21,6 @@ export const carouselImages = [
     },
 ];
 
-// Theme options for route selection
 export const themeOptions = [
     {
         id: "heritage",
@@ -49,7 +42,6 @@ export const themeOptions = [
     },
 ];
 
-// Sample route for results page
 export const sampleRoute = {
     startPoint: "Jama Masjid",
     endPoint: "Red Fort",
@@ -95,7 +87,6 @@ export const sampleRoute = {
     ],
 };
 
-// Popular destinations for suggestions
 export const popularDestinations = [
     { name: "Old Delhi", region: "Delhi, India" },
     { name: "Varanasi Ghats", region: "Uttar Pradesh, India" },

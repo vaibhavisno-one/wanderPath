@@ -9,10 +9,6 @@ interface ThemeCardProps {
     onSelect: (id: string) => void;
 }
 
-/**
- * ThemeCard Component
- * Selectable theme card for route preferences
- */
 export default function ThemeCard({
     id,
     name,
@@ -88,7 +84,7 @@ export default function ThemeCard({
                 }
       `}
         >
-            {/* Selected Indicator */}
+
             {selected && (
                 <div className="absolute top-4 right-4 w-5 h-5 bg-[var(--color-forest)] rounded-full flex items-center justify-center">
                     <svg
@@ -106,7 +102,7 @@ export default function ThemeCard({
                 </div>
             )}
 
-            {/* Icon */}
+
             <div
                 className={`
           w-12 h-12 mb-4 rounded-[var(--radius-md)]
@@ -121,7 +117,7 @@ export default function ThemeCard({
                 {icons[icon]}
             </div>
 
-            {/* Content */}
+
             <h3 className="font-[var(--font-heading)] text-lg font-semibold text-[var(--color-charcoal)] mb-1">
                 {name}
             </h3>

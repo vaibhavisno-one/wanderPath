@@ -7,10 +7,7 @@ interface LocationInputProps extends InputHTMLAttributes<HTMLInputElement> {
     icon?: "start" | "end";
 }
 
-/**
- * LocationInput Component
- * Styled input for start/end point selection with location icon
- */
+
 const LocationInput = forwardRef<HTMLInputElement, LocationInputProps>(
     ({ label, icon = "start", className = "", ...props }, ref) => {
         return (
@@ -19,7 +16,6 @@ const LocationInput = forwardRef<HTMLInputElement, LocationInputProps>(
                     {label}
                 </label>
                 <div className="relative">
-                    {/* Location Icon */}
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted)]">
                         {icon === "start" ? (
                             <svg

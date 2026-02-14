@@ -3,11 +3,6 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
-/**
- * Navbar Component
- * Desktop: logo left, nav links right, sticky
- * Mobile: logo left, hamburger right → full-screen overlay menu
- */
 export default function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -20,7 +15,6 @@ export default function Navbar() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    /* Lock body scroll when mobile menu is open */
     useEffect(() => {
         if (isMobileMenuOpen) {
             document.body.style.overflow = "hidden";
@@ -43,12 +37,11 @@ export default function Navbar() {
         <nav
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
                 ? "bg-[var(--color-offwhite)]/95 backdrop-blur-sm shadow-sm"
-                : "bg-transparent"
+                : "bg-[var(--color-offwhite)]/95 backdrop-blur-sm shadow-sm"
                 }`}
         >
             <div className="container">
                 <div className="flex items-center justify-between h-16 md:h-20">
-                    {/* Logo — always left */}
                     <Link href="/" className="flex items-center gap-2 group z-50 relative">
                         <svg
                             width="32"
@@ -71,7 +64,6 @@ export default function Navbar() {
                         </span>
                     </Link>
 
-                    {/* Desktop Navigation — hidden below md */}
                     <div className="hidden md:flex items-center gap-8">
                         {navLinks.map((link) => (
                             <Link
@@ -84,7 +76,6 @@ export default function Navbar() {
                         ))}
                     </div>
 
-                    {/* Mobile Hamburger — ≥44×44px touch target, visible below md */}
                     <button
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         className="md:hidden flex items-center justify-center w-11 h-11 text-[var(--color-charcoal)] z-50 relative"
@@ -108,7 +99,6 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Mobile Full-Screen Overlay Menu */}
             <div
                 className={`
                     md:hidden fixed inset-0 z-40

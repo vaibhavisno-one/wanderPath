@@ -33,9 +33,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${playfair.variable} ${inter.variable}`}>
         <Navbar />
-        <br />
-        <br />
-        <br />
         <main className="min-h-screen">
           {children}
         </main>

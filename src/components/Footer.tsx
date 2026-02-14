@@ -1,9 +1,6 @@
 import Link from "next/link";
 
-/**
- * Footer Component
- * Minimal branding with links and social icons
- */
+
 export default function Footer() {
     const currentYear = new Date().getFullYear();
 
@@ -26,7 +23,7 @@ export default function Footer() {
         <footer className="bg-[var(--color-stone)] border-t border-[var(--color-sand)]/50">
             <div className="container py-10 md:py-16">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
-                    {/* Brand */}
+
                     <div className="md:col-span-2">
                         <Link href="/" className="flex items-center gap-2 mb-4">
                             <svg
@@ -55,7 +52,7 @@ export default function Footer() {
                         </p>
                     </div>
 
-                    {/* Explore Links */}
+
                     <div>
                         <h4 className="font-[var(--font-heading)] text-sm font-semibold text-[var(--color-charcoal)] mb-4">
                             Explore
@@ -74,7 +71,7 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    {/* Company Links */}
+
                     <div>
                         <h4 className="font-[var(--font-heading)] text-sm font-semibold text-[var(--color-charcoal)] mb-4">
                             Company
@@ -94,13 +91,12 @@ export default function Footer() {
                     </div>
                 </div>
 
-                {/* Bottom Bar — Mobile: left-aligned; Desktop: centered flex-row */}
                 <div className="mt-12 pt-8 border-t border-[var(--color-sand)]/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <p className="text-[var(--color-light-muted)] text-xs">
                         © {currentYear} WanderPath. All rights reserved.
                     </p>
 
-                    {/* Social Icons */}
+
                     <div className="flex items-center gap-4">
                         {["twitter", "instagram", "linkedin"].map((social) => (
                             <a

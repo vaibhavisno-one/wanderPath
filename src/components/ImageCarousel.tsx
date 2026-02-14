@@ -14,11 +14,6 @@ interface ImageCarouselProps {
     autoPlayInterval?: number;
 }
 
-/**
- * ImageCarousel Component
- * Desktop: wide carousel with rounded corners, visible navigation arrows, centered
- * Mobile: full-width, dots indicator, swipe gestures, no arrows
- */
 export default function ImageCarousel({
     images,
     autoPlayInterval = 5000,
@@ -40,7 +35,7 @@ export default function ImageCarousel({
         setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
     }, [images.length]);
 
-    // Auto-scroll
+
     useEffect(() => {
         if (isPaused) return;
 
@@ -48,7 +43,6 @@ export default function ImageCarousel({
         return () => clearInterval(interval);
     }, [isPaused, autoPlayInterval, goToNext]);
 
-    /* Touch swipe support for mobile */
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartX.current = e.targetTouches[0].clientX;
     };
@@ -73,7 +67,6 @@ export default function ImageCarousel({
     };
 
     return (
-        /* Desktop: centered container with rounded corners; Mobile: full-width no rounding */
         <div className="w-full md:container">
             <div
                 className="relative w-full overflow-hidden bg-[var(--color-stone)] md:rounded-[var(--radius-xl)]"
@@ -83,7 +76,6 @@ export default function ImageCarousel({
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
-                {/* Images Container */}
                 <div
                     className="flex transition-transform duration-700 ease-out"
                     style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -95,7 +87,6 @@ export default function ImageCarousel({
                             relative w-full flex-shrink-0
                             aspect-[4/3] md:aspect-[16/7]
                         `}
-                        /* Mobile: taller 4:3 ratio for better viewport use; Desktop: cinematic 16:7 */
                         >
                             <Image
                                 src={image.src}
@@ -104,10 +95,8 @@ export default function ImageCarousel({
                                 className="object-cover"
                                 priority={index === 0}
                             />
-                            {/* Overlay gradient */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-                            {/* Caption */}
                             {image.caption && (
                                 <div className="absolute bottom-8 left-0 right-0 text-center px-4">
                                     <p className="text-white text-base md:text-lg font-[var(--font-heading)] tracking-wide">
@@ -119,7 +108,6 @@ export default function ImageCarousel({
                     ))}
                 </div>
 
-                {/* Navigation Arrows — Desktop only, hidden on mobile */}
                 <button
                     onClick={goToPrev}
                     className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 rounded-full items-center justify-center text-[var(--color-charcoal)] hover:bg-white transition-all shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[var(--color-forest)]"
@@ -158,7 +146,6 @@ export default function ImageCarousel({
                     </svg>
                 </button>
 
-                {/* Dots Indicator — visible on all viewports */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
                     {images.map((_, index) => (
                         <button

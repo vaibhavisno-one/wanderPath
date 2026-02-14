@@ -9,11 +9,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     fullWidth?: boolean;
 }
 
-/**
- * Button Component
- * Reusable button with primary, secondary, and ghost variants
- * All variants enforce min-height 44px for touch-friendly targets
- */
+
 export default function Button({
     variant = "primary",
     size = "md",
