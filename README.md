@@ -1,37 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WanderPath
 
-## Getting Started
+WanderPath is a location-based exploration platform designed to help users discover nearby places based on proximity and personal interests, rather than popularity or algorithmic bias.
 
-First, run the development server:
+The platform emphasizes authenticity by ensuring that user interactions—especially reviews—are tied to real-world visits through a geospatial verification system.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Core Idea
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Traditional platforms allow anyone to review any place, leading to spam, fake ratings, and unreliable data.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+WanderPath solves this by introducing:
 
-## Learn More
+> ✅ **Visit-based verification** — users can only review a place after physically visiting it.
 
-To learn more about Next.js, take a look at the following resources:
+This ensures:
+- Authentic reviews
+- Higher trust
+- Better discovery experience
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🧠 Key Features
 
-## Deploy on Vercel
+- 📍 **Nearby Exploration**
+  - Discover places based on real-time location using geospatial queries
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- 🗺️ **Map + List View**
+  - Flexible browsing experience
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# wanderPath
+- ✅ **Visit Verification System**
+  - Reviews are unlocked only after location validation
+
+- ⭐ **Trust-Based Review System**
+  - One user → one review per place (after visit)
+
+- 🔖 **Bookmarking**
+  - Save places for future exploration
+
+- 👤 **User Activity Tracking**
+  - Visit history and engagement
+
+- 🛡️ **Admin Moderation**
+  - Control over places, reviews, and user-generated content
+
+---
+
+## 🏗️ Tech Stack
+
+### Backend
+- Node.js
+- Express.js
+- MongoDB (Mongoose)
+- Session-based Authentication
+
+### Core Concepts
+- Geospatial indexing (`2dsphere`)
+- GeoJSON-based location storage
+- Visit-validation logic
+- Session management (no JWT)
+
+---
+
+## 🧩 Data Models Overview
+
+- **User** → identity, roles, visited places  
+- **Place** → geo-based entity with ratings  
+- **Visit** → proof of physical presence  
+- **Review** → allowed only after verified visit  
+- **Bookmark** → saved places  
+- **Session** → authentication layer  
+- **Admin** → moderation system  
+
+---
+
+## 🔐 Authentication
+
+WanderPath uses **session-based authentication**:
+
+- Secure HTTP-only cookies
+- Server-side session storage
+- Session tracking (IP + user agent)
+- Easy session invalidation for security
+
+---
+
+## 🌍 Data Strategy
+
+- Base layer: OpenStreetMap (or similar sources)
+- Admin-curated places
+- User-submitted places (with approval)
+
+---
+
+## 📈 Future Enhancements
+
+- NLP-based search (e.g. “quiet cafes near me”)
+- Personalized recommendations
+- Social features
+- Advanced moderation & trust scoring
+
+---
+
+## 🎯 Vision
+
+WanderPath aims to become a **trust-first exploration platform** where digital reviews are grounded in real-world experiences, reducing noise and increasing reliability in location-based discovery.
+
+---
+
+## ⚙️ Status
+
+🚧 Currently in development — backend architecture and core models implemented.
+
+---
+
+## 📌 Note
+
+This project focuses heavily on backend architecture, scalability, and real-world validation systems rather than just UI.
