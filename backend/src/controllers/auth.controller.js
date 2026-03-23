@@ -1,4 +1,4 @@
-import User from "../models/user.model"
+import {User} from "../models/user.model"
 import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -77,7 +77,7 @@ const loginUser = asyncHandler(async(req,res)=>{
     const user = await User.findOne({$or:[{email},{username}]})
 
     if(!user){
-        throw new APIError(404, "user not found")
+        throw new ApiError(404, "user not found")
     }
 
 
