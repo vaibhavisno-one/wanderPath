@@ -35,6 +35,11 @@ const userSchema = new Schema({
         ref:"Place",
         default:[]
     },
+    refreshToken:{
+        type:String,
+        required:true,
+        trim:true
+    },
     
     createdAt:{
         type:Date,
@@ -61,6 +66,35 @@ userSchema.methods.isPasswordCorrect= async function
     return await bcrypt.compare(password, this.password) 
 }
 
+//method to generate access token
 
+
+userSchema.methods.generateAccessToken = function () {
+    return jwt.sign(
+        {
+            _id: this._id,
+            username: this.username,
+
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+        }
+    )
+}
+
+//method to generate refresh token
+userSchema.methods.generateRefreshToken = function () {
+    return jwt.sign(
+        {
+            _id: this._id,
+        },
+        process.env.REFRESH_TOKEN_SECRET,
+        {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+        }
+    )
+
+}
 
 export default User = mongoose.model("User",userSchema);

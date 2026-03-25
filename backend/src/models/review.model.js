@@ -1,4 +1,4 @@
-import mongoose,{Schema} from "mongoose";
+export mongoose,{Schema} from "mongoose";
 
 const reviewSchema = new Schema({
     user:{
