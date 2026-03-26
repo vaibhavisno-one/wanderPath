@@ -35,6 +35,9 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!username || !email || !password || !fullname) {
         throw new ApiError(400, "all fields are required");
     }
+    if(password.length<6){
+        throw new ApiError(400,"password must be at least 6 characters long");
+    }
 
     const existingUser = await User.findOne({
         $or: [{ email }, { username }]
@@ -98,8 +101,8 @@ const loginUser = asyncHandler(async (req, res) => {
         success: true,
         message: "User logged in successfully",
         // user:user,
-        accessToken,
-        refreshToken
+        // accessToken,
+        // refreshToken
     })
 
 })
@@ -148,17 +151,15 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             secure: true
         }
 
-        const { accessToken, newRefreshToken } = await generateAccessAndRefreshToken(user._id);
+        const { accessToken, refreshToken:newRefreshToken } = await generateAccessAndRefreshToken(user._id);
 
         return res
             .status(200)
-            .cookies(accessToken, options)
-            .cookies(newRefreshToken, options)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", newRefreshToken, options)
             .json(new ApiResponse(200, {}, "Access token refreshed "))
 
 
-
-invalid
 
     } catch (error) {
         throw new ApiError(401, "invalid refresh token")

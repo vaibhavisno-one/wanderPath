@@ -1,45 +1,56 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import { Place } from "../models/place.model.js";
-import { User } from "../models/user.model.js";
+import Place from "../models/place.model.js";
 
+const createPlace = asyncHandler(async (req, res) => {
+    const { name, description, location, address, city, state, country } = req.body;
 
-/*
-1. create place
-2. get nearby place
-3. get palce by id
-4. update place
-5. delete place
-*/
-
-
-const createPlace = asyncHandler(async(req ,res)=>{
-    const {name,description,location,images,address,city,state,country} =req.body;
-
-    const addedBy = req.User?._id;
-
-    if(!name || !description || !location || !address || !city || !state || !country){
-        throw new ApiError(400,"All fields are required")
+    if (!name || !description || !location) {
+        throw new ApiError(400, "Required fields missing");
     }
 
-    const place=await Place.create({
-        name,
-        description,
-        location,
-        images,
-        address,
-        city,
-        state,
-        country,
-        addedBy
-    })
+    const place = await Place.create({
+        ...req.body,
+        addedBy: req.user._id,
+        isVerified: false // requires admin approval
+    });
 
-    return res.status(201).json(
-        new ApiResponse(201,place,"Place created successfully")
-    )
-        
-})
+    return res.status(201).json(new ApiResponse(201, place, "Place submitted for review"));
+});
 
-export default{createPlace};
+const getNearbyPlaces = asyncHandler(async (req, res) => {
+    let { lat, lng, radius = 5000, page = 1, limit = 10 } = req.query;
 
+    lat = parseFloat(lat);
+    lng = parseFloat(lng);
+    radius = Math.min(parseFloat(radius), 20000); // cap radius
+
+    const places = await Place.aggregate([
+        {
+            $geoNear: {
+                near: { type: "Point", coordinates: [lng, lat] },
+                distanceField: "distance",
+                maxDistance: radius,
+                spherical: true
+            }
+        },
+        { $match: { isVerified: true } },
+        { $skip: (page - 1) * limit },
+        { $limit: parseInt(limit) }
+    ]);
+
+    return res.status(200).json(new ApiResponse(200, places, "Nearby places"));
+});
+
+const getPlaceById = asyncHandler(async (req, res) => {
+    const place = await Place.findById(req.params.placeId);
+
+    if (!place || !place.isVerified) {
+        throw new ApiError(404, "Place not found");
+    }
+
+    return res.status(200).json(new ApiResponse(200, place, "Place fetched"));
+});
+
+export default { createPlace, getNearbyPlaces, getPlaceById };
