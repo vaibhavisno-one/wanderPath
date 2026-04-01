@@ -1,1 +1,10 @@
-export const DB_NAME = "wanderpath"
+export const DB_NAME = "wanderpath_db";
+export const MAX_RADIUS = 20000; // meters
+export const MIN_PASSWORD_LENGTH = 8;
+export const MAX_PLACE_NAME_LENGTH = 100;
+export const MAX_DESCRIPTION_LENGTH = 5000;
+export const MIN_DESCRIPTION_LENGTH = 10;
+export const MIN_RATING = 1;
+export const MAX_RATING = 5;
+export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+export const VALID_COORDINATES_RANGE = { lat: [-90, 90], lng: [-180, 180] };

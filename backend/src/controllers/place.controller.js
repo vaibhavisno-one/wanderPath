@@ -2,29 +2,100 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import Place from "../models/place.model.js";
+import { 
+    MAX_RADIUS, 
+    MAX_PLACE_NAME_LENGTH, 
+    MIN_DESCRIPTION_LENGTH, 
+    MAX_DESCRIPTION_LENGTH,
+    VALID_COORDINATES_RANGE 
+} from "../constants.js";
+
+// Validate coordinates
+const isValidCoordinates = (lat, lng) => {
+    const latRange = VALID_COORDINATES_RANGE.lat;
+    const lngRange = VALID_COORDINATES_RANGE.lng;
+    
+    return (
+        lat >= latRange[0] && lat <= latRange[1] &&
+        lng >= lngRange[0] && lng <= lngRange[1]
+    );
+}
 
 const createPlace = asyncHandler(async (req, res) => {
     const { name, description, location, address, city, state, country } = req.body;
 
+    // Validation
     if (!name || !description || !location) {
-        throw new ApiError(400, "Required fields missing");
+        throw new ApiError(400, "Name, description, and location are required");
     }
 
+    if (name.length > MAX_PLACE_NAME_LENGTH) {
+        throw new ApiError(400, `Place name must not exceed ${MAX_PLACE_NAME_LENGTH} characters`);
+    }
+
+    if (description.length < MIN_DESCRIPTION_LENGTH || description.length > MAX_DESCRIPTION_LENGTH) {
+        throw new ApiError(400, `Description must be between ${MIN_DESCRIPTION_LENGTH} and ${MAX_DESCRIPTION_LENGTH} characters`);
+    }
+
+    // Validate location structure and coordinates
+    if (!location.type || location.type !== "Point" || !location.coordinates || location.coordinates.length !== 2) {
+        throw new ApiError(400, "Location must have type 'Point' and valid coordinates [lng, lat]");
+    }
+
+    const [lng, lat] = location.coordinates;
+    if (!isValidCoordinates(lat, lng)) {
+        throw new ApiError(400, "Invalid coordinates. Latitude must be between -90 and 90, Longitude between -180 and 180");
+    }
+
+    if (!address || !city || !state) {
+        throw new ApiError(400, "Address, city, and state are required");
+    }
+
+    // Check for duplicate place name
+    const existingPlace = await Place.findOne({ name: { $regex: `^${name}$`, $options: "i" } });
+    if (existingPlace) {
+        throw new ApiError(409, "A place with this name already exists");
+    }
+
+    // Create place
     const place = await Place.create({
-        ...req.body,
+        name: name.trim(),
+        description: description.trim(),
+        location: {
+            type: "Point",
+            coordinates: [lng, lat]
+        },
+        address: address.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        country: country?.trim() || "India",
         addedBy: req.user._id,
-        isVerified: false // requires admin approval
+        isVerified: false // Requires admin approval
     });
 
-    return res.status(201).json(new ApiResponse(201, place, "Place submitted for review"));
+    return res.status(201).json(
+        new ApiResponse(201, place, "Place submitted for admin review")
+    );
 });
 
 const getNearbyPlaces = asyncHandler(async (req, res) => {
     let { lat, lng, radius = 5000, page = 1, limit = 10 } = req.query;
 
+    // Validation
+    if (!lat || !lng) {
+        throw new ApiError(400, "Latitude and longitude are required");
+    }
+
     lat = parseFloat(lat);
     lng = parseFloat(lng);
-    radius = Math.min(parseFloat(radius), 20000); // cap radius
+    radius = Math.min(parseFloat(radius) || 5000, MAX_RADIUS);
+    page = Math.max(parseInt(page) || 1, 1);
+    limit = Math.min(Math.max(parseInt(limit) || 10, 1), 100); // Max 100 results
+
+    // Validate coordinates
+    if (!isValidCoordinates(lat, lng)) {
+        throw new ApiError(400, "Invalid coordinates");
+    }
 
     const places = await Place.aggregate([
         {
@@ -36,21 +107,97 @@ const getNearbyPlaces = asyncHandler(async (req, res) => {
             }
         },
         { $match: { isVerified: true } },
+        { $sort: { distance: 1 } },
         { $skip: (page - 1) * limit },
-        { $limit: parseInt(limit) }
+        { $limit: limit }
     ]);
 
-    return res.status(200).json(new ApiResponse(200, places, "Nearby places"));
+    return res.status(200).json(
+        new ApiResponse(200, places, "Nearby places fetched successfully")
+    );
 });
 
 const getPlaceById = asyncHandler(async (req, res) => {
-    const place = await Place.findById(req.params.placeId);
+    const { placeId } = req.params;
 
-    if (!place || !place.isVerified) {
+    if (!placeId) {
+        throw new ApiError(400, "Place ID is required");
+    }
+
+    const place = await Place.findById(placeId).populate("addedBy", "fullname email");
+
+    if (!place) {
         throw new ApiError(404, "Place not found");
     }
 
-    return res.status(200).json(new ApiResponse(200, place, "Place fetched"));
+    if (!place.isVerified) {
+        // Only allow creator or admin to view unverified places
+        if (req.user && (req.user._id.toString() === place.addedBy._id.toString() || req.user.role === "admin")) {
+            return res.status(200).json(
+                new ApiResponse(200, place, "Place fetched successfully")
+            );
+        }
+        throw new ApiError(404, "Place not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, place, "Place fetched successfully")
+    );
 });
 
-export default { createPlace, getNearbyPlaces, getPlaceById };
+const updatePlace = asyncHandler(async (req, res) => {
+    const { placeId } = req.params;
+    const { name, description, location, address, city, state, country } = req.body;
+
+    const place = await Place.findById(placeId);
+
+    if (!place) {
+        throw new ApiError(404, "Place not found");
+    }
+
+    // Check authorization - only creator or admin can update
+    if (place.addedBy.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+        throw new ApiError(403, "Unauthorized to update this place");
+    }
+
+    // Validate and update fields
+    if (name) {
+        if (name.length > MAX_PLACE_NAME_LENGTH) {
+            throw new ApiError(400, `Place name must not exceed ${MAX_PLACE_NAME_LENGTH} characters`);
+        }
+        place.name = name.trim();
+    }
+
+    if (description) {
+        if (description.length < MIN_DESCRIPTION_LENGTH || description.length > MAX_DESCRIPTION_LENGTH) {
+            throw new ApiError(400, `Description must be between ${MIN_DESCRIPTION_LENGTH} and ${MAX_DESCRIPTION_LENGTH} characters`);
+        }
+        place.description = description.trim();
+    }
+
+    if (location) {
+        if (location.coordinates && location.coordinates.length === 2) {
+            const [lng, lat] = location.coordinates;
+            if (!isValidCoordinates(lat, lng)) {
+                throw new ApiError(400, "Invalid coordinates");
+            }
+            place.location = { type: "Point", coordinates: [lng, lat] };
+        }
+    }
+
+    if (address) place.address = address.trim();
+    if (city) place.city = city.trim();
+    if (state) place.state = state.trim();
+    if (country) place.country = country.trim();
+
+    // Reset verification if significant changes made
+    place.isVerified = false;
+
+    await place.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, place, "Place updated successfully")
+    );
+});
+
+export { createPlace, getNearbyPlaces, getPlaceById, updatePlace };

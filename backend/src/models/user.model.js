@@ -10,49 +10,43 @@ const userSchema = new Schema({
         unique:true,
         lowercase:true,
         trim:true
-    
     },
-
+    username:{
+        type:String,
+        required:true,
+        unique:true,
+        lowercase:true,
+        trim:true,
+        minlength:3,
+        maxlength:30
+    },
     fullname:{
         type:String,
         required:true,
-        trim:true
-    
+        trim:true,
+        maxlength:100
     },
     password:{
         type:String,
-        required:true,
-        trim:true,
-        min:6
+        required:true
     },
     role:{
         type:String,
         enum:["user","admin"],
         default:"user"
-    
     },
-    visitedPlaces:{
+    visitedPlaces:[{
         type:Schema.Types.ObjectId,
-        ref:"Place",
-        default:[]
-    },
+        ref:"Place"
+    }],
     refreshToken:{
         type:String,
-        required:true,
-        trim:true
+        default:null
     },
-    
-    createdAt:{
-        type:Date,
-        default:Date.now
-    
-    },
-    updatedAt:{
-        type:Date,
-        default:Date.now
+    isActive:{
+        type:Boolean,
+        default:true
     }
-
-    
 }, {timestamps:true})
 
 userSchema.pre("save", async function (next) {
