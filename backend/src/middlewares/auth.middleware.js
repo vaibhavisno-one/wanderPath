@@ -38,6 +38,25 @@ const verifyJWT = asyncHandler(async(req, res, next) => {
     }
 })
 
+// Optional JWT verification - this is for hybrid routes, if login then good else no issue
+const optionalJWT = asyncHandler(async(req, res, next) => {
+    try{
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+
+        if(token){
+            const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+            const user = await User.findById(decodedToken._id).select("-password -refreshToken");
+            
+            if(user && user.isActive){
+                req.user = user;
+            } 
+        }
+    }catch(error){
+        // Silently fail for optional auth
+    }
+    next();
+})
+
 const verifyAdmin = asyncHandler(async(req, res, next) => {
     if(!req.user || req.user.role !== "admin"){
         throw new ApiError(403, "Admin access required");
@@ -45,4 +64,4 @@ const verifyAdmin = asyncHandler(async(req, res, next) => {
     next();
 })
 
-export { verifyJWT, verifyAdmin }
+export { verifyJWT, verifyAdmin, optionalJWT }

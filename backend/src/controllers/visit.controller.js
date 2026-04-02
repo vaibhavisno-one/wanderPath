@@ -1,12 +1,13 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
-
 import Visit from "../models/visit.model.js";
 import Place from "../models/place.model.js";
-
-const MIN_DISTANCE = 100; // meters
-const MIN_DURATION = 5 * 60 * 1000; // 5 minutes
+import { 
+    MIN_VISIT_DISTANCE, 
+    DISTANCE_TOLERANCE, 
+    MIN_VISIT_DURATION 
+} from "../constants.js";
 
 // Haversine formula
 const getDistance = (coords1, coords2) => {
@@ -44,8 +45,8 @@ const checkIn = asyncHandler(async (req, res) => {
         place.location.coordinates
     );
 
-    if (distance > MIN_DISTANCE) {
-        throw new ApiError(400, "You are too far from this place");
+    if (distance > MIN_VISIT_DISTANCE) {
+        throw new ApiError(400, `You must be within ${MIN_VISIT_DISTANCE}m of the place to check in`);
     }
 
     // prevent multiple active visits
@@ -99,8 +100,8 @@ const checkOut = asyncHandler(async (req, res) => {
         place.location.coordinates
     );
 
-    // verification condition
-    if (duration >= MIN_DURATION && distance <= MIN_DISTANCE) {
+    // Verification with tolerance buffer for real-world GPS variance
+    if (duration >= MIN_VISIT_DURATION && distance <= DISTANCE_TOLERANCE) {
         visit.isVerified = true;
     }
 
@@ -126,4 +127,4 @@ const getMyVisits = asyncHandler(async (req, res) => {
     );
 });
 
-export default { checkIn, checkOut, getMyVisits };
+export { checkIn, checkOut, getMyVisits };

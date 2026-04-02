@@ -37,5 +37,6 @@ const visitSchema = new Schema({
 },{timestamps:true});
 
 visitSchema.index({ userLocation: "2dsphere" });
+visitSchema.index({ user: 1, place: 1 });
 
 export default mongoose.model("Visit", visitSchema);

@@ -32,6 +32,11 @@ const isValidEmail = (email) => {
 const registerUser = asyncHandler(async (req, res) => {
     const { username, email, password, fullname } = req.body;
 
+    // Security: Prevent role escalation
+    if (req.body.role || req.body.isActive !== undefined) {
+        throw new ApiError(403, "Cannot set role or account status during registration");
+    }
+
     // Validation
     if (!username || !email || !password || !fullname) {
         throw new ApiError(400, "All fields are required");

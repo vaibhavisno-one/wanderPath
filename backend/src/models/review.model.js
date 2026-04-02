@@ -29,7 +29,7 @@ const reviewSchema = new Schema({
     visit:{
         type:Schema.Types.ObjectId,
         ref:"Visit",
-        required:true
+        required:true // currently not confirmed that this should be true or false
     },
     approved:{
         type:Boolean,
@@ -42,5 +42,6 @@ const reviewSchema = new Schema({
 },{timestamps:true});
 
 reviewSchema.index({ user: 1, place: 1 }, { unique: true });
+reviewSchema.index({ place: 1, approved: 1 });
 
 export default mongoose.model("Review",reviewSchema);

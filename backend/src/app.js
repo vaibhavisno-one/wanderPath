@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { generalLimiter } from "./middlewares/rateLimit.middleware.js";
 
 const app = express();
 
@@ -12,6 +13,9 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
+// Global Rate Limiter
+app.use(generalLimiter);
+
 // Body Parser Middleware
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
@@ -22,10 +26,23 @@ app.use(express.static("public"));
 // Cookie Parser
 app.use(cookieParser());
 
-// Routes
-import authRouter from "./routes/auth.route.js"
+// Routes Import
+import authRouter from "./routes/auth.route.js";
+import userRouter from "./routes/user.routes.js";
+import placeRouter from "./routes/place.routes.js";
+import reviewRouter from "./routes/review.routes.js";
+import visitRouter from "./routes/visit.routes.js";
+import adminRouter from "./routes/admin.routes.js";
+import bookmarkRouter from "./routes/bookmark.routes.js";
 
-app.use("/api/auth", authRouter);
+// API v1 Routes
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/places", placeRouter);
+app.use("/api/v1/reviews", reviewRouter);
+app.use("/api/v1/visits", visitRouter);
+app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/bookmarks", bookmarkRouter);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

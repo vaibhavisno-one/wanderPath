@@ -4,6 +4,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 import Review from "../models/review.model.js";
 import Visit from "../models/visit.model.js";
 import Place from "../models/place.model.js";
+import Admin from "../models/admin.model.js";
 import { MIN_RATING, MAX_RATING } from "../constants.js";
 
 const createReview = asyncHandler(async (req, res) => {
@@ -63,24 +64,13 @@ const createReview = asyncHandler(async (req, res) => {
         approved: false  // Requires admin approval
     });
 
-    // Update place rating
-    const stats = await Review.aggregate([
-        { $match: { place: placeId, approved: true } },
-        {
-            $group: {
-                _id: "$place",
-                avgRating: { $avg: "$rating" },
-                count: { $sum: 1 }
-            }
-        }
-    ]);
-
-    if (stats.length > 0) {
-        await Place.findByIdAndUpdate(placeId, {
-            avgRating: stats[0].avgRating,
-            reviewCount: stats[0].count
-        });
-    }
+    // Add to admin moderation queue
+    await Admin.create({
+        type: "review",
+        targetModel: "Review",
+        targetId: review._id,
+        status: "pending"
+    });
 
     return res.status(201).json(
         new ApiResponse(201, review, "Review submitted for admin approval")

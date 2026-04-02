@@ -52,7 +52,7 @@ const userSchema = new Schema({
 userSchema.pre("save", async function (next) {
 
     if (!this.isModified("password")) return next();
-    this.password= await bcrypt.hash(this.password,10) //what to hash and rounds?
+    this.password= await bcrypt.hash(this.password,10) 
     next()
 })
 //method to check pass where ever needed
@@ -92,4 +92,5 @@ userSchema.methods.generateRefreshToken = function () {
 
 }
 
-export default User = mongoose.model("User",userSchema);
+const User = mongoose.model("User", userSchema);
+export default User;

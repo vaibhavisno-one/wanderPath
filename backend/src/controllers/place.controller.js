@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import Place from "../models/place.model.js";
+import Admin from "../models/admin.model.js";
 import { 
     MAX_RADIUS, 
     MAX_PLACE_NAME_LENGTH, 
@@ -73,6 +74,14 @@ const createPlace = asyncHandler(async (req, res) => {
         isVerified: false // Requires admin approval
     });
 
+    // Add to admin moderation queue
+    await Admin.create({
+        type: "place",
+        targetModel: "Place",
+        targetId: place._id,
+        status: "pending"
+    });
+
     return res.status(201).json(
         new ApiResponse(201, place, "Place submitted for admin review")
     );
@@ -97,6 +106,18 @@ const getNearbyPlaces = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid coordinates");
     }
 
+    // Count total matching places
+    const total = await Place.countDocuments({
+        isVerified: true,
+        location: {
+            $geoWithin: {
+                $centerSphere: [[lng, lat], radius / 6371000] // Earth radius in meters
+            }
+        }
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
     const places = await Place.aggregate([
         {
             $geoNear: {
@@ -113,7 +134,13 @@ const getNearbyPlaces = asyncHandler(async (req, res) => {
     ]);
 
     return res.status(200).json(
-        new ApiResponse(200, places, "Nearby places fetched successfully")
+        new ApiResponse(200, {
+            data: places,
+            page,
+            limit,
+            total,
+            totalPages
+        }, "Nearby places fetched successfully")
     );
 });
 

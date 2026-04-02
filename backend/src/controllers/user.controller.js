@@ -13,6 +13,11 @@ const getMe = asyncHandler(async (req, res) => {
 const updateProfile = asyncHandler(async (req, res) => {
     const { fullname, email } = req.body;
 
+    // Prevent role modification through this endpoint
+    if (req.body.role) {
+        throw new ApiError(403, "Role cannot be modified via this endpoint");
+    }
+
     const user = await User.findById(req.user._id);
     if (!user) throw new ApiError(404, "User not found");
 
@@ -32,13 +37,20 @@ const updateProfile = asyncHandler(async (req, res) => {
 const deleteUser = asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
-    if (req.user._id.toString() !== userId) {
+    if (req.user._id.toString() !== userId && req.user.role !== "admin") {
         throw new ApiError(403, "Unauthorized");
     }
 
-    await User.findByIdAndDelete(userId);
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
 
-    return res.status(200).json(new ApiResponse(200, {}, "User deleted"));
+    // Soft delete - set isActive to false
+    user.isActive = false;
+    await user.save();
+
+    return res.status(200).json(new ApiResponse(200, {}, "User deactivated successfully"));
 });
 
-export default { getMe, updateProfile, deleteUser };
+export { getMe, updateProfile, deleteUser };

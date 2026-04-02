@@ -202,6 +202,32 @@ const getFlaggedReviews = asyncHandler(async (req, res) => {
     );
 });
 
+// Get dashboard statistics - ADMIN ONLY
+const getDashboardStats = asyncHandler(async (req, res) => {
+    const [
+        totalUsers,
+        totalPlaces,
+        pendingApprovals,
+        flaggedReviews
+    ] = await Promise.all([
+        User.countDocuments({ isActive: true }),
+        Place.countDocuments(),
+        Admin.countDocuments({ status: "pending" }),
+        Review.countDocuments({ flagged: true })
+    ]);
+
+    const stats = {
+        totalUsers,
+        totalPlaces,
+        pendingApprovals,
+        flaggedReviews
+    };
+
+    return res.status(200).json(
+        new ApiResponse(200, stats, "Dashboard stats fetched successfully")
+    );
+});
+
 export {
     getPendingQueue,
     approveContent,
@@ -209,7 +235,8 @@ export {
     flagReview,
     banUser,
     unbanUser,
-    getFlaggedReviews
+    getFlaggedReviews,
+    getDashboardStats
 };
 
 
