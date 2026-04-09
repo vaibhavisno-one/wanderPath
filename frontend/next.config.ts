@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  reactStrictMode: false, // Disable to prevent double-render issues
   images: {
     remotePatterns: [
       {
@@ -12,4 +13,7 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+
+
 

@@ -23,7 +23,7 @@ const verifyJWT = asyncHandler(async(req, res, next) => {
         }
 
         // Check if user is active
-        if(!user.isActive){
+        if (!user.isActive && req.path !== `/reactivate/${user._id.toString()}`) {
             throw new ApiError(403, "User account is disabled");
         }
 

@@ -1,4 +1,4 @@
-export const DB_NAME = "wanderpath_db";
+export const DB_NAME = "wanderpath";
 export const MAX_RADIUS = 20000; // meters
 export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PLACE_NAME_LENGTH = 100;

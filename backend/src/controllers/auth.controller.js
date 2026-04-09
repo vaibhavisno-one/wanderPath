@@ -1,4 +1,4 @@
-import  User  from "../models/user.model.js"
+import User from "../models/user.model.js"
 import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -15,10 +15,12 @@ const generateAccessAndRefreshToken = async (userId) => {
         }
         const accessToken = user.generateAccessToken();
         const refreshToken = user.generateRefreshToken();
+
         user.refreshToken = refreshToken;
         await user.save({ validateBeforeSave: false });
         return { accessToken, refreshToken };
     } catch (error) {
+
         throw new ApiError(500, "Failed to generate tokens");
     }
 }
@@ -88,6 +90,7 @@ const registerUser = asyncHandler(async (req, res) => {
 })
 
 const loginUser = asyncHandler(async (req, res) => {
+
     const { email, username, password } = req.body;
 
     if (!email && !username) {
@@ -106,10 +109,13 @@ const loginUser = asyncHandler(async (req, res) => {
         ]
     });
 
+
     if (!user) {
         throw new ApiError(401, "Invalid credentials");
     }
-
+    if (!user.isActive) {
+        throw new ApiError(403, "Account is deactivated");
+    }
     // Verify password
     const checkPassword = await user.isPasswordCorrect(password);
 
