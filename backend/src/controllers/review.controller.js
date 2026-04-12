@@ -33,15 +33,18 @@ const createReview = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Place not found");
     }
 
-    // Verify user visited the place
+    // Verify user visited the place (verified visit OR active check-in)
     const visit = await Visit.findOne({
         user: req.user._id,
         place: placeId,
-        isVerified: true
+        $or: [
+            { isVerified: true },
+            { checkOutTime: null }
+        ]
     });
 
     if (!visit) {
-        throw new ApiError(403, "You must have a verified visit to this place before reviewing");
+        throw new ApiError(403, "You must have visited or be currently checked in to this place before reviewing");
     }
 
     // Check if user already reviewed this place
@@ -54,14 +57,14 @@ const createReview = asyncHandler(async (req, res) => {
         throw new ApiError(409, "You have already reviewed this place");
     }
 
-    // Create review
+    // auto-approve only for verified visits
     const review = await Review.create({
         user: req.user._id,
         place: placeId,
         rating,
         comment: comment.trim(),
         visit: visit._id,
-        approved: false  // Requires admin approval
+        approved: visit.isVerified === true  // true if verified, false for active check-in
     });
 
     // Add to admin moderation queue

@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { useGeoLocation } from '@/lib/useGeoLocation';
 
 export default function HomePage() {
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
+  const { location, error: geoError, loading: geoLoading, getLocation } = useGeoLocation();
   const [radius, setRadius] = useState('5000');
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState('');
@@ -13,8 +13,13 @@ export default function HomePage() {
   const handleFetchNearby = async () => {
     setError('');
     setResponse(null);
+    if (!location) {
+      setError('Location is required. Click "Use My Location" first.');
+      return;
+    }
+
     try {
-      const data = await api.getNearbyPlaces(latitude, longitude, parseInt(radius) || 5000);
+      const data = await api.getNearbyPlaces(location.latitude, location.longitude, parseInt(radius) || 5000);
       setResponse(data);
     } catch (err: any) {
       setError(err.message);
@@ -29,25 +34,17 @@ export default function HomePage() {
         <h2 style={{ marginBottom: '1rem' }}>Nearby Places</h2>
         
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Latitude:</label>
-          <input
-            type="text"
-            value={latitude}
-            onChange={(e) => setLatitude(e.target.value)}
-            placeholder="e.g., 28.6139"
-            style={{ padding: '0.5rem', width: '300px', border: '1px solid #ccc' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Longitude:</label>
-          <input
-            type="text"
-            value={longitude}
-            onChange={(e) => setLongitude(e.target.value)}
-            placeholder="e.g., 77.2090"
-            style={{ padding: '0.5rem', width: '300px', border: '1px solid #ccc' }}
-          />
+          <button
+            onClick={handleUseMyLocation}
+            style={{ padding: '0.5rem 1rem', background: '#000', color: '#fff', border: 'none', cursor: 'pointer' }}
+          >
+            Use My Location
+          </button>
+          {location && (
+            <p style={{ marginTop: '0.75rem' }}>
+              Lat: {location.latitude.toFixed(6)} | Lng: {location.longitude.toFixed(6)} | Accuracy: {Math.round(location.accuracy)}m
+            </p>
+          )}
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
@@ -63,6 +60,7 @@ export default function HomePage() {
 
         <button
           onClick={handleFetchNearby}
+          disabled={!location}
           style={{ padding: '0.5rem 1rem', background: '#000', color: '#fff', border: 'none', cursor: 'pointer' }}
         >
           Fetch Nearby Places

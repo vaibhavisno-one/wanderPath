@@ -8,14 +8,49 @@ export default function PlacesPage() {
   const [visitId, setVisitId] = useState('');
   const [rating, setRating] = useState('5');
   const [comment, setComment] = useState('');
+  const [location, setLocation] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null);
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState('');
+
+  const handleUseMyLocation = () => {
+    setError('');
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by this browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+      },
+      (geoError) => {
+        if (geoError.code === geoError.PERMISSION_DENIED) {
+          setError('Location permission denied. Please allow location access.');
+          return;
+        }
+        setError(`Unable to fetch location: ${geoError.message}`);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
 
   const handleCheckIn = async () => {
     setError('');
     setResponse(null);
+    if (!location) {
+      setError('Location is required. Click "Use My Location" first.');
+      return;
+    }
     try {
-      const data = await api.checkIn(placeId);
+      const data = await api.checkIn(placeId, location);
       setResponse(data);
     } catch (err: any) {
       setError(err.message);
@@ -25,8 +60,12 @@ export default function PlacesPage() {
   const handleCheckOut = async () => {
     setError('');
     setResponse(null);
+    if (!location) {
+      setError('Location is required. Click "Use My Location" first.');
+      return;
+    }
     try {
-      const data = await api.checkOut(visitId);
+      const data = await api.checkOut(visitId, location);
       setResponse(data);
     } catch (err: any) {
       setError(err.message);
@@ -48,6 +87,21 @@ export default function PlacesPage() {
     <div>
       <h1 style={{ marginBottom: '2rem' }}>Place Testing</h1>
 
+      <section style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd' }}>
+        <h2 style={{ marginBottom: '1rem' }}>Location</h2>
+        <button
+          onClick={handleUseMyLocation}
+          style={{ padding: '0.5rem 1rem', background: '#000', color: '#fff', border: 'none', cursor: 'pointer' }}
+        >
+          Use My Location
+        </button>
+        {location && (
+          <p style={{ marginTop: '0.75rem' }}>
+            Lat: {location.latitude.toFixed(6)} | Lng: {location.longitude.toFixed(6)} | Accuracy: {Math.round(location.accuracy)}m
+          </p>
+        )}
+      </section>
+
       <section style={{ marginBottom: '3rem', padding: '1rem', border: '1px solid #ddd' }}>
         <h2 style={{ marginBottom: '1rem' }}>Check-In</h2>
         
@@ -64,6 +118,7 @@ export default function PlacesPage() {
 
         <button
           onClick={handleCheckIn}
+          disabled={!location}
           style={{ padding: '0.5rem 1rem', background: '#000', color: '#fff', border: 'none', cursor: 'pointer' }}
         >
           Check-In
@@ -86,6 +141,7 @@ export default function PlacesPage() {
 
         <button
           onClick={handleCheckOut}
+          disabled={!location}
           style={{ padding: '0.5rem 1rem', background: '#000', color: '#fff', border: 'none', cursor: 'pointer' }}
         >
           Check-Out

@@ -30,11 +30,43 @@ const getDistance = (coords1, coords2) => {
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
+const validateUserLocation = (userLocation) => {
+    if (!userLocation) {
+        throw new ApiError(400, "userLocation required");
+    }
+
+    if (
+        userLocation.type !== "Point" ||
+        !Array.isArray(userLocation.coordinates) ||
+        userLocation.coordinates.length !== 2
+    ) {
+        throw new ApiError(400, "userLocation must be a valid GeoJSON Point with [lng, lat]");
+    }
+
+    const [lng, lat] = userLocation.coordinates;
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+        throw new ApiError(400, "userLocation coordinates must be valid numbers");
+    }
+
+    if (lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+        throw new ApiError(400, "userLocation coordinates are out of range");
+    }
+};
+
 const checkIn = asyncHandler(async (req, res) => {
-    const { placeId, userLocation } = req.body;
+    const { placeId, userLocation, accuracy } = req.body;
 
     if (!placeId || !userLocation) {
         throw new ApiError(400, "placeId and userLocation required");
+    }
+    validateUserLocation(userLocation);
+
+    if (!Number.isFinite(accuracy) || accuracy < 0) {
+        throw new ApiError(400, "accuracy must be a valid number");
+    }
+
+    if (accuracy > 50) {
+        throw new ApiError(400, "GPS accuracy is too low. Please try again outdoors.");
     }
 
     const place = await Place.findById(placeId);
@@ -74,10 +106,20 @@ const checkIn = asyncHandler(async (req, res) => {
 });
 
 const checkOut = asyncHandler(async (req, res) => {
-    const { visitId, userLocation } = req.body;
+    const { visitId, userLocation, accuracy } = req.body;
 
     if (!visitId || !userLocation) {
         throw new ApiError(400, "visitId and userLocation required");
+    }
+
+    validateUserLocation(userLocation);
+
+    if (!Number.isFinite(accuracy) || accuracy < 0) {
+        throw new ApiError(400, "accuracy must be a valid number");
+    }
+
+    if (accuracy > 50) {
+        throw new ApiError(400, "GPS accuracy is too low. Please try again outdoors.");
     }
 
     const visit = await Visit.findById(visitId);
