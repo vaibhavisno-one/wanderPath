@@ -35,11 +35,7 @@ export const api = {
 
   // Places
   getNearbyPlaces: async (latitude, longitude, radius = 5000) => {
-    const params = new URLSearchParams({
-      lat: String(latitude),
-      lng: String(longitude),
-      radius: String(radius),
-    });
+    const params = new URLSearchParams({ latitude, longitude, radius });
     const response = await fetch(`${API_BASE_URL}/api/v1/places/nearby?${params}`, {
       headers: getAuthHeaders(),
     });
@@ -47,40 +43,26 @@ export const api = {
   },
 
   // Visits
-  checkIn: async (placeId, location) => {
+  checkIn: async (placeId) => {
     const response = await fetch(`${API_BASE_URL}/api/v1/visits/check-in`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         ...getAuthHeaders() 
       },
-      body: JSON.stringify({
-        placeId,
-        userLocation: {
-          type: 'Point',
-          coordinates: [location.longitude, location.latitude],
-        },
-        accuracy: location.accuracy,
-      }),
+      body: JSON.stringify({ placeId }),
     });
     return handleResponse(response);
   },
 
-  checkOut: async (visitId, location) => {
+  checkOut: async (visitId) => {
     const response = await fetch(`${API_BASE_URL}/api/v1/visits/check-out`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         ...getAuthHeaders() 
       },
-      body: JSON.stringify({
-        visitId,
-        userLocation: {
-          type: 'Point',
-          coordinates: [location.longitude, location.latitude],
-        },
-        accuracy: location.accuracy,
-      }),
+      body: JSON.stringify({ visitId }),
     });
     return handleResponse(response);
   },
