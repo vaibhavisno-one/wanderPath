@@ -7,7 +7,7 @@ import AdminQueue from "../../components/AdminQueue";
 
 export default function AdminPage() {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export default function AdminPage() {
           router.push("/places");
           return;
         }
-        setReady(true);
+        setLoading(false);
       })
       .catch((err) => {
         setError(err.message);
@@ -25,9 +25,7 @@ export default function AdminPage() {
       });
   }, [router]);
 
-  if (!ready) {
-    return <p>{error ? `Access check failed: ${error}` : "Checking admin access..."}</p>;
-  }
+  if (loading) return <p>{error ? `Access check failed: ${error}` : "Loading..."}</p>;
 
   return (
     <div>

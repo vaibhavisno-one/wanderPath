@@ -1,30 +1,57 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import LocationFetcher from "../components/LocationFetcher";
+import PlaceCard from "../components/PlaceCard";
 import { apiFetch } from "../lib/api";
 
 export default function HomePage() {
-  const [me, setMe] = useState(null);
+  const [coords, setCoords] = useState({ lat: null, lng: null, accuracy: 0 });
+  const [radius, setRadius] = useState(5000);
+  const [places, setPlaces] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    apiFetch("/users/me").then((res) => setMe(res.data)).catch(() => setMe(null));
-  }, []);
+  const fetchNearby = async () => {
+    if (coords.lat === null || coords.lng === null) {
+      setError("Please set latitude and longitude first.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      const res = await apiFetch(`/places/nearby?lat=${coords.lat}&lng=${coords.lng}&radius=${radius}`);
+      setPlaces(res.data?.data || []);
+    } catch (err) {
+      setError(err.message);
+      setPlaces([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
       <h1>WanderPath</h1>
-      <p>Minimal frontend aligned with backend APIs.</p>
-
-      {me ? (
-        <p>Logged in as <strong>{me.username}</strong> ({me.role})</p>
-      ) : (
-        <p>You are not logged in.</p>
-      )}
+      <LocationFetcher onChange={setCoords} />
 
       <div className="card">
-        <Link href="/places">Go to Places</Link>
+        <h3>Nearby Places</h3>
+        <input
+          type="number"
+          placeholder="Radius meters"
+          value={radius}
+          onChange={(e) => setRadius(e.target.value)}
+        />
+        <button type="button" onClick={fetchNearby} disabled={loading || coords.lat === null || coords.lng === null}>
+          {loading ? "Loading..." : "Fetch Nearby"}
+        </button>
       </div>
+
+      {places.map((place) => <PlaceCard key={place._id} place={place} />)}
+      {!loading && places.length === 0 && <p>No places loaded.</p>}
+      {error && <p className="status-bad">{error}</p>}
     </div>
   );
 }

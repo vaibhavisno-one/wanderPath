@@ -6,26 +6,29 @@ import { apiFetch } from "../lib/api";
 export default function AdminQueue() {
   const [queue, setQueue] = useState([]);
   const [stats, setStats] = useState(null);
-  const [flagged, setFlagged] = useState([]);
   const [identifier, setIdentifier] = useState("");
-  const [targetUser, setTargetUser] = useState(null);
+  const [user, setUser] = useState(null);
   const [reason, setReason] = useState("Policy violation");
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   const load = async () => {
+    setLoading(true);
     setError("");
     try {
-      const [queueRes, statsRes, flaggedRes] = await Promise.all([
+      const [queueRes, statsRes] = await Promise.all([
         apiFetch("/admin/queue"),
-        apiFetch("/admin/stats"),
-        apiFetch("/admin/flagged-reviews")
+        apiFetch("/admin/stats")
       ]);
-      setQueue(queueRes.data || []);
+
+      const pending = (queueRes.data || []).filter((item) => item.status === "pending");
+      setQueue(pending);
       setStats(statsRes.data || null);
-      setFlagged(flaggedRes.data || []);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,50 +37,68 @@ export default function AdminQueue() {
   }, []);
 
   const approve = async (adminId) => {
-    setMessage("");
+    setLoading(true);
     setError("");
+    setMessage("");
     try {
       await apiFetch(`/admin/approve/${adminId}`, { method: "POST", body: JSON.stringify({}) });
-      setMessage("Content approved");
+      setMessage("Approved");
       await load();
     } catch (err) {
       setError(err.message);
+      setLoading(false);
     }
   };
 
   const reject = async (adminId) => {
-    setMessage("");
+    if (!reason.trim()) {
+      setError("Rejection reason is required");
+      return;
+    }
+
+    setLoading(true);
     setError("");
+    setMessage("");
     try {
       await apiFetch(`/admin/reject/${adminId}`, {
         method: "POST",
         body: JSON.stringify({ reason })
       });
-      setMessage("Content rejected");
+      setMessage("Rejected");
       await load();
     } catch (err) {
       setError(err.message);
+      setLoading(false);
     }
   };
 
   const searchUser = async () => {
+    if (!identifier.trim()) {
+      setError("Email or username required");
+      return;
+    }
+
+    setLoading(true);
     setError("");
     setMessage("");
     try {
       const res = await apiFetch(`/admin/users/search?identifier=${encodeURIComponent(identifier)}`);
-      setTargetUser(res.data);
+      setUser(res.data);
     } catch (err) {
-      setTargetUser(null);
+      setUser(null);
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const ban = async () => {
-    if (!targetUser?._id) return;
+    if (!user?._id) return;
+    setLoading(true);
     setError("");
     setMessage("");
     try {
-      await apiFetch(`/admin/ban/${targetUser._id}`, {
+      await apiFetch(`/admin/ban/${user._id}`, {
         method: "POST",
         body: JSON.stringify({ reason })
       });
@@ -86,15 +107,17 @@ export default function AdminQueue() {
       await load();
     } catch (err) {
       setError(err.message);
+      setLoading(false);
     }
   };
 
   const unban = async () => {
-    if (!targetUser?._id) return;
+    if (!user?._id) return;
+    setLoading(true);
     setError("");
     setMessage("");
     try {
-      await apiFetch(`/admin/unban/${targetUser._id}`, {
+      await apiFetch(`/admin/unban/${user._id}`, {
         method: "POST",
         body: JSON.stringify({})
       });
@@ -103,13 +126,15 @@ export default function AdminQueue() {
       await load();
     } catch (err) {
       setError(err.message);
+      setLoading(false);
     }
   };
 
   return (
     <div>
       <div className="card">
-        <h3>Dashboard Metrics</h3>
+        <h3>Stats</h3>
+        {loading && <p>Loading...</p>}
         <p>Total users: {stats?.totalUsers ?? "-"}</p>
         <p>Total places: {stats?.totalPlaces ?? "-"}</p>
         <p>Pending approvals: {stats?.pendingApprovals ?? "-"}</p>
@@ -117,55 +142,49 @@ export default function AdminQueue() {
       </div>
 
       <div className="card">
-        <h3>Ban / Unban User</h3>
+        <h3>Pending Queue</h3>
+        <input
+          placeholder="Rejection reason"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+
+        {queue.length === 0 && <p>No pending items.</p>}
+
+        {queue.map((item) => (
+          <div key={item._id} className="card">
+            <p>Record ID: {item._id}</p>
+            <p>Type: {item.type}</p>
+            <p>Target: {item.targetModel}</p>
+            <p>Status: {item.status}</p>
+            <button type="button" onClick={() => approve(item._id)} disabled={loading}>Approve</button>
+            <button type="button" onClick={() => reject(item._id)} disabled={loading || !reason.trim()}>
+              Reject
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="card">
+        <h3>User Management</h3>
         <input
           placeholder="Email or username"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
         />
-        <button type="button" onClick={searchUser}>Search User</button>
-        <input
-          placeholder="Reason"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
+        <button type="button" onClick={searchUser} disabled={loading || !identifier.trim()}>
+          Search User
+        </button>
 
-        {targetUser && (
-          <>
-            <p>{targetUser.fullname} ({targetUser.username}) - {targetUser.email}</p>
-            <p>Status: {targetUser.isActive ? "Active" : "Banned"}</p>
-            <button type="button" onClick={ban}>Ban User</button>
-            <button type="button" onClick={unban}>Unban User</button>
-          </>
+        {user && (
+          <div className="card">
+            <p>{user.fullname} ({user.username})</p>
+            <p>{user.email}</p>
+            <p className={user.isActive ? "status-ok" : "status-bad"}>{user.isActive ? "Active" : "Banned"}</p>
+            <button type="button" onClick={ban} disabled={loading}>Ban</button>
+            <button type="button" onClick={unban} disabled={loading}>Unban</button>
+          </div>
         )}
-      </div>
-
-      <div className="card">
-        <h3>Pending Moderation Queue</h3>
-        {queue.length === 0 && <p>No pending items</p>}
-        {queue.map((item) => (
-          <div key={item._id} className="card">
-            <p>Record ID: {item._id}</p>
-            <p>Type: {item.type}</p>
-            <p>Target Model: {item.targetModel}</p>
-            <p>Status: {item.status}</p>
-            <button type="button" onClick={() => approve(item._id)}>Approve</button>
-            <button type="button" onClick={() => reject(item._id)}>Reject</button>
-          </div>
-        ))}
-      </div>
-
-      <div className="card">
-        <h3>Flagged Reviews</h3>
-        {flagged.length === 0 && <p>No flagged reviews</p>}
-        {flagged.map((item) => (
-          <div key={item._id} className="card">
-            <p>Review ID: {item._id}</p>
-            <p>User: {item.user?.fullname || "-"}</p>
-            <p>Place: {item.place?.name || "-"}</p>
-            <p>Approved: {item.approved ? "Yes" : "No"}</p>
-          </div>
-        ))}
       </div>
 
       {message && <p className="status-ok">{message}</p>}

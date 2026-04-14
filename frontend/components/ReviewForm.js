@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { apiFetch } from "../lib/api";
 
-export default function ReviewForm({ placeId, canSubmit }) {
+export default function ReviewForm({ placeId, canSubmit, onSubmitted }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -15,10 +16,11 @@ export default function ReviewForm({ placeId, canSubmit }) {
     setStatus("");
 
     if (!canSubmit) {
-      setError("Review allowed only after verified visit.");
+      setError("Verified visit required before review.");
       return;
     }
 
+    setLoading(true);
     try {
       const res = await apiFetch("/reviews", {
         method: "POST",
@@ -29,18 +31,27 @@ export default function ReviewForm({ placeId, canSubmit }) {
         })
       });
 
-      const approved = res.data?.approved;
-      setStatus(approved ? "Review approved" : "Review pending admin approval");
+      if (res.data?.approved) {
+        setStatus("Review approved");
+      } else {
+        setStatus("Pending Approval");
+      }
       setComment("");
+      if (onSubmitted) onSubmitted();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <form className="card" onSubmit={submit}>
       <h3>Write Review</h3>
-      {!canSubmit && <p className="status-warn">Verified visit required before review.</p>}
+      <p className={canSubmit ? "status-ok" : "status-warn"}>
+        {canSubmit ? "Visit Verified" : "Not Verified"}
+      </p>
+
       <label>Rating (1-5)</label>
       <input
         type="number"
@@ -49,6 +60,7 @@ export default function ReviewForm({ placeId, canSubmit }) {
         value={rating}
         onChange={(e) => setRating(e.target.value)}
       />
+
       <label>Comment</label>
       <textarea
         value={comment}
@@ -56,7 +68,11 @@ export default function ReviewForm({ placeId, canSubmit }) {
         minLength={10}
         placeholder="At least 10 characters"
       />
-      <button type="submit">Submit Review</button>
+
+      <button type="submit" disabled={loading || !canSubmit || comment.trim().length < 10}>
+        {loading ? "Submitting..." : "Submit Review"}
+      </button>
+
       {status && <p className="status-warn">{status}</p>}
       {error && <p className="status-bad">{error}</p>}
     </form>

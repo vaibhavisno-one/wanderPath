@@ -12,10 +12,11 @@ export default function PlaceCard({ place }) {
       <h3>{place.name}</h3>
       <p>{place.description}</p>
       <p>{place.address}, {place.city}, {place.state}, {place.country}</p>
-      <p>GeoJSON: Point [{lng}, {lat}]</p>
+      <p>Coordinates: [{lng}, {lat}]</p>
+      {typeof place.distance === "number" && <p>Distance: {Math.round(place.distance)} m</p>}
       <p>Rating: {place.avgRating || 0} ({place.reviewCount || 0} reviews)</p>
       <p className={place.isVerified ? "status-ok" : "status-warn"}>
-        {place.isVerified ? "Approved place" : "Pending admin approval"}
+        {place.isVerified ? "Approved" : "Pending Approval"}
       </p>
       <Link href={`/place/${place._id}`}>Open place</Link>
     </div>
