@@ -228,7 +228,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     );
 });
 
-// Search  by username/email for  actions 
+// Search  by username/email for  actions - ADMIN ONLY
 const searchUserForModeration = asyncHandler(async (req, res) => {
     const { identifier } = req.query;
 
