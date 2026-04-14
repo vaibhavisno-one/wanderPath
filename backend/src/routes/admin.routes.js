@@ -8,7 +8,8 @@ import {
     banUser,
     unbanUser,
     getFlaggedReviews,
-    getDashboardStats
+    getDashboardStats,
+    searchUserForModeration
 } from "../controllers/admin.controller.js";
 
 const router = Router();
@@ -21,6 +22,7 @@ router.route("/ban/:userId").post(verifyJWT, verifyAdmin, banUser);
 router.route("/unban/:userId").post(verifyJWT, verifyAdmin, unbanUser);
 router.route("/flagged-reviews").get(verifyJWT, verifyAdmin, getFlaggedReviews);
 router.route("/stats").get(verifyJWT, verifyAdmin, getDashboardStats);
+router.route("/users/search").get(verifyJWT, verifyAdmin, searchUserForModeration);
 
 // User can flag reviews ,not for only admin
 router.route("/flag-review/:reviewId").post(verifyJWT, flagReview);

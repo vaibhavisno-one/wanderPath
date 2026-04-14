@@ -25,7 +25,7 @@ const generateAccessAndRefreshToken = async (userId) => {
     }
 }
 
-// Validate email format
+// wrote a method to validate email instead of smugging all in one funtion
 const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);

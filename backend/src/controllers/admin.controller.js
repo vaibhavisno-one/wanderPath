@@ -228,6 +228,32 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     );
 });
 
+// Search  by username/email for  actions 
+const searchUserForModeration = asyncHandler(async (req, res) => {
+    const { identifier } = req.query;
+
+    if (!identifier || identifier.trim().length === 0) {
+        throw new ApiError(400, "identifier query is required");
+    }
+
+    const normalized = identifier.toLowerCase().trim();
+
+    const user = await User.findOne({
+        $or: [
+            { email: normalized },
+            { username: normalized }
+        ]
+    }).select("_id email username fullname role isActive createdAt");
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, user, "User fetched successfully")
+    );
+});
+
 export {
     getPendingQueue,
     approveContent,
@@ -236,7 +262,7 @@ export {
     banUser,
     unbanUser,
     getFlaggedReviews,
-    getDashboardStats
+    getDashboardStats,
+    searchUserForModeration
 };
-
 
