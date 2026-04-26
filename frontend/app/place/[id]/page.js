@@ -13,6 +13,7 @@ export default function PlaceDetailPage() {
 
   const [place, setPlace] = useState(null);
   const [visits, setVisits] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,13 +27,15 @@ export default function PlaceDetailPage() {
     setLoading(true);
     setError("");
     try {
-      const [placeRes, visitRes] = await Promise.all([
+      const [placeRes, visitRes, reviewRes] = await Promise.all([
         apiFetch(`/places/${placeId}`),
-        apiFetch("/visits/my-visits")
+        apiFetch("/visits/my-visits"),
+        apiFetch(`/reviews/place/${placeId}`)
       ]);
 
       setPlace(placeRes.data);
       setVisits(visitRes.data || []);
+      setReviews(reviewRes.data || []);
 
       try {
         const me = await apiFetch("/users/me");
@@ -83,6 +86,31 @@ export default function PlaceDetailPage() {
       <VisitControls placeId={placeId} visits={visits} onRefresh={load} />
 
       <ReviewForm placeId={placeId} canSubmit={verified} onSubmitted={load} />
+
+      <div className="card">
+        <h3>Reviews</h3>
+        {reviews.length === 0 ? (
+          <p>No approved reviews yet.</p>
+        ) : (
+          reviews.map((review) => (
+            <div key={review._id} className="visit-item">
+              <p>
+                <strong>{review.user?.fullname || review.user?.username || "User"}</strong> · Rating: {review.rating}/5
+              </p>
+              <p>{review.comment}</p>
+              {Array.isArray(review.images) && review.images.length > 0 && (
+                <div className="visit-meta">
+                  {review.images.map((img) => (
+                    <a key={img.public_id || img.url} href={img.url} target="_blank" rel="noreferrer">
+                      View image
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
 
       <p className={verified ? "status-ok" : "status-warn"}>{verified ? "Visit Verified" : "Not Verified"}</p>
       {pendingReview && <p className="status-warn">Pending Approval</p>}

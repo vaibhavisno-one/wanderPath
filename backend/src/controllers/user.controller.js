@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import User from "../models/user.model.js";
+import { deleteFromCloudinary, uploadBufferToCloudinary } from "../utils/cloudinary.js";
 
 const getMe = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select("-password -refreshToken");
@@ -29,7 +30,27 @@ const updateProfile = asyncHandler(async (req, res) => {
 
     if (fullname) user.fullname = fullname;
 
-    await user.save();
+    if (req.file) {
+        const oldAvatar = user.avatar
+            ? { url: user.avatar.url, public_id: user.avatar.public_id }
+            : { url: null, public_id: null };
+        const uploadedAvatar = await uploadBufferToCloudinary(req.file.buffer, { folder: "wanderpath/avatars" });
+
+        try {
+            user.avatar = uploadedAvatar;
+            await user.save();
+
+            if (oldAvatar.public_id) {
+                await deleteFromCloudinary(oldAvatar.public_id);
+            }
+        } catch (error) {
+            await deleteFromCloudinary(uploadedAvatar.public_id);
+            user.avatar = oldAvatar;
+            throw error;
+        }
+    } else {
+        await user.save();
+    }
 
     return res.status(200).json(new ApiResponse(200, user, "Profile updated"));
 });

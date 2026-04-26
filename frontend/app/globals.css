@@ -65,6 +65,24 @@ button:disabled {
   color: #c00;
 }
 
+.visit-item {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.visit-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.visit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 @media (max-width: 720px) {
   .row {
     grid-template-columns: 1fr;

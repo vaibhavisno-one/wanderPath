@@ -25,7 +25,18 @@ const placeSchema = new Schema({
         }
     },
     images: {
-        type: [String],
+        type: [{
+            url: {
+                type: String,
+                required: true,
+                trim: true
+            },
+            public_id: {
+                type: String,
+                required: true,
+                trim: true
+            }
+        }],
         default: []
     },
     address: {

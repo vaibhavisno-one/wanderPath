@@ -6,6 +6,7 @@ import { apiFetch } from "../lib/api";
 export default function ReviewForm({ placeId, canSubmit, onSubmitted }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -22,13 +23,18 @@ export default function ReviewForm({ placeId, canSubmit, onSubmitted }) {
 
     setLoading(true);
     try {
+      const formData = new FormData();
+      formData.append("placeId", placeId);
+      formData.append("rating", String(Number(rating)));
+      formData.append("comment", comment);
+
+      images.forEach((file) => {
+        formData.append("images", file);
+      });
+
       const res = await apiFetch("/reviews", {
         method: "POST",
-        body: JSON.stringify({
-          placeId,
-          rating: Number(rating),
-          comment
-        })
+        body: formData
       });
 
       if (res.data?.approved) {
@@ -37,6 +43,7 @@ export default function ReviewForm({ placeId, canSubmit, onSubmitted }) {
         setStatus("Pending Approval");
       }
       setComment("");
+      setImages([]);
       if (onSubmitted) onSubmitted();
     } catch (err) {
       setError(err.message);
@@ -68,6 +75,15 @@ export default function ReviewForm({ placeId, canSubmit, onSubmitted }) {
         minLength={10}
         placeholder="At least 10 characters"
       />
+      <label>Images (optional)</label>
+      <input
+        type="file"
+        multiple
+        accept="image/*"
+        onChange={(e) => setImages(Array.from(e.target.files || []))}
+        disabled={loading}
+      />
+      {images.length > 0 && <p>{images.length} image(s) selected</p>}
 
       <button type="submit" disabled={loading || !canSubmit || comment.trim().length < 10}>
         {loading ? "Submitting..." : "Submit Review"}

@@ -16,6 +16,7 @@ export default function AddPlacePage() {
     lat: "",
     lng: ""
   });
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -23,8 +24,8 @@ export default function AddPlacePage() {
   const useSelectedLocation = () => {
     setForm((prev) => ({
       ...prev,
-      lat: location.lat ?? "",
-      lng: location.lng ?? ""
+      lat: location.lat !== null ? String(location.lat) : "",
+      lng: location.lng !== null ? String(location.lng) : ""
     }));
   };
 
@@ -38,20 +39,30 @@ export default function AddPlacePage() {
       const lat = Number(form.lat);
       const lng = Number(form.lng);
 
+      if (Number.isNaN(lat) || Number.isNaN(lng)) {
+        throw new Error("Latitude and longitude must be valid numbers");
+      }
+
+      const formData = new FormData();
+
+      formData.append("name", form.name);
+      formData.append("description", form.description);
+      formData.append("address", form.address);
+      formData.append("city", form.city);
+      formData.append("state", form.state);
+      formData.append("country", form.country);
+      formData.append("location", JSON.stringify({
+        type: "Point",
+        coordinates: [lng, lat]
+      }));
+
+      images.forEach((file) => {
+        formData.append("images", file);
+      });
+
       await apiFetch("/places", {
         method: "POST",
-        body: JSON.stringify({
-          name: form.name,
-          description: form.description,
-          address: form.address,
-          city: form.city,
-          state: form.state,
-          country: form.country,
-          location: {
-            type: "Point",
-            coordinates: [lng, lat]
-          }
-        })
+        body: formData
       });
 
       setStatus("Pending Approval");
@@ -65,6 +76,7 @@ export default function AddPlacePage() {
         lat: "",
         lng: ""
       });
+      setImages([]);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -94,6 +106,15 @@ export default function AddPlacePage() {
           <input placeholder="Latitude" value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} />
         </div>
         <input placeholder="Longitude" value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} />
+        <label>Images (required)</label>
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => setImages(Array.from(e.target.files || []))}
+          disabled={loading}
+        />
+        {images.length > 0 && <p>{images.length} image(s) selected</p>}
 
         <button
           type="submit"
@@ -105,7 +126,8 @@ export default function AddPlacePage() {
             !form.city.trim() ||
             !form.state.trim() ||
             form.lat === "" ||
-            form.lng === ""
+            form.lng === "" ||
+            images.length === 0
           }
         >
           {loading ? "Submitting..." : "Submit Place"}

@@ -14,6 +14,7 @@ export default function RootLayout({ children }) {
           <Link href="/">Home</Link>
           <Link href="/places">Places</Link>
           <Link href="/add-place">Add Place</Link>
+          <Link href="/profile">Profile</Link>
           <Link href="/admin">Admin</Link>
           <Link href="/login">Login</Link>
           <Link href="/register">Register</Link>

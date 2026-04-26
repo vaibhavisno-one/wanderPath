@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import multer from "multer";
 import { generalLimiter } from "./middlewares/rateLimit.middleware.js";
 
 const app = express();
@@ -59,6 +60,18 @@ app.use((req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        const message = err.code === "LIMIT_FILE_SIZE"
+            ? "Image size must be less than or equal to 5MB"
+            : err.message;
+
+        return res.status(400).json({
+            success: false,
+            statusCode: 400,
+            message
+        });
+    }
+
     const statusCode = err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
@@ -71,4 +84,3 @@ app.use((err, req, res, next) => {
 });
 
 export default app;
-

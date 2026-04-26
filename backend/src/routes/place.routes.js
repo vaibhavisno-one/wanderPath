@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { verifyJWT, optionalJWT } from "../middlewares/auth.middleware.js";
+import { uploadPlaceImages } from "../middlewares/multer.middleware.js";
 import { 
     createPlace, 
     getNearbyPlaces, 
@@ -16,7 +17,7 @@ router.route("/nearby").get(getNearbyPlaces);
 router.route("/:placeId").get(optionalJWT, getPlaceById);
 
 // Protected routes
-router.route("/").post(verifyJWT, createPlace);
-router.route("/:placeId").put(verifyJWT, updatePlace);
+router.route("/").post(verifyJWT, uploadPlaceImages, createPlace);
+router.route("/:placeId").put(verifyJWT, uploadPlaceImages, updatePlace);
 
 export default router;

@@ -46,6 +46,18 @@ const userSchema = new Schema({
     isActive:{
         type:Boolean,
         default:true
+    },
+    avatar: {
+        url: {
+            type: String,
+            default: null,
+            trim: true
+        },
+        public_id: {
+            type: String,
+            default: null,
+            trim: true
+        }
     }
 }, {timestamps:true})
 

@@ -5,10 +5,13 @@ import Review from "../models/review.model.js";
 import Visit from "../models/visit.model.js";
 import Place from "../models/place.model.js";
 import Admin from "../models/admin.model.js";
+import mongoose from "mongoose";
 import { MIN_RATING, MAX_RATING } from "../constants.js";
+import { deleteManyFromCloudinary, uploadManyToCloudinary } from "../utils/cloudinary.js";
 
 const createReview = asyncHandler(async (req, res) => {
     const { placeId, rating, comment } = req.body;
+    let uploadedImages = [];
 
     // Validation
     if (!placeId || rating === undefined || !comment) {
@@ -57,27 +60,62 @@ const createReview = asyncHandler(async (req, res) => {
         throw new ApiError(409, "You have already reviewed this place");
     }
 
-    // auto-approve only for verified visits
-    const review = await Review.create({
-        user: req.user._id,
-        place: placeId,
-        rating,
-        comment: comment.trim(),
-        visit: visit._id,
-        approved: visit.isVerified === true  // true if verified, false for active check-in
-    });
+    const createReviewDoc = async (session = null) => {
+        const review = new Review({
+            user: req.user._id,
+            place: placeId,
+            rating,
+            comment: comment.trim(),
+            visit: visit._id,
+            approved: visit.isVerified === true, // true if verified, false for active check-in
+            images: uploadedImages
+        });
 
-    // Add to admin moderation queue
-    await Admin.create({
-        type: "review",
-        targetModel: "Review",
-        targetId: review._id,
-        status: "pending"
-    });
+        await review.save(session ? { session } : undefined);
 
-    return res.status(201).json(
-        new ApiResponse(201, review, "Review submitted for admin approval")
-    );
+        const adminRecord = new Admin({
+            type: "review",
+            targetModel: "Review",
+            targetId: review._id,
+            status: "pending"
+        });
+        await adminRecord.save(session ? { session } : undefined);
+
+        return review;
+    };
+
+    try {
+        if (req.files && req.files.length > 0) {
+            uploadedImages = await uploadManyToCloudinary(req.files, { folder: "wanderpath/reviews" });
+        }
+
+        try {
+            const session = await mongoose.startSession();
+            try {
+                let review;
+                await session.withTransaction(async () => {
+                    review = await createReviewDoc(session);
+                });
+
+                return res.status(201).json(
+                    new ApiResponse(201, review, "Review submitted for admin approval")
+                );
+            } finally {
+                await session.endSession();
+            }
+        } catch (error) {
+            if (error.message?.includes("Transaction numbers are only allowed")) {
+                const review = await createReviewDoc();
+                return res.status(201).json(
+                    new ApiResponse(201, review, "Review submitted for admin approval")
+                );
+            }
+            throw error;
+        }
+    } catch (error) {
+        await deleteManyFromCloudinary(uploadedImages.map((img) => img.public_id));
+        throw error;
+    }
 });
 
 const updateReview = asyncHandler(async (req, res) => {
@@ -138,6 +176,32 @@ const updateReview = asyncHandler(async (req, res) => {
     );
 });
 
+const getPlaceReviews = asyncHandler(async (req, res) => {
+    const { placeId } = req.params;
+
+    if (!placeId) {
+        throw new ApiError(400, "Place ID is required");
+    }
+
+    const place = await Place.findById(placeId);
+    if (!place) {
+        throw new ApiError(404, "Place not found");
+    }
+
+    const query = { place: placeId };
+    if (req.user?.role !== "admin") {
+        query.approved = true;
+    }
+
+    const reviews = await Review.find(query)
+        .populate("user", "username fullname avatar")
+        .sort({ createdAt: -1 });
+
+    return res.status(200).json(
+        new ApiResponse(200, reviews, "Place reviews fetched successfully")
+    );
+});
+
 const deleteReview = asyncHandler(async (req, res) => {
     const { reviewId } = req.params;
 
@@ -153,8 +217,10 @@ const deleteReview = asyncHandler(async (req, res) => {
     }
 
     const placeId = review.place;
+    const existingImages = review.images || [];
 
     await Review.findByIdAndDelete(reviewId);
+    await deleteManyFromCloudinary(existingImages.map((img) => img.public_id));
 
     // Update place rating
     const stats = await Review.aggregate([
@@ -185,4 +251,4 @@ const deleteReview = asyncHandler(async (req, res) => {
     );
 });
 
-export { createReview, updateReview, deleteReview };
+export { createReview, updateReview, deleteReview, getPlaceReviews };

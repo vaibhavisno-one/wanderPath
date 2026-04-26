@@ -40,9 +40,12 @@ async function tryRefresh() {
 export async function apiFetch(path, options = {}, retry = true) {
   const token = getAccessToken();
   const headers = {
-    "Content-Type": "application/json",
     ...(options.headers || {})
   };
+
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;

@@ -3,6 +3,8 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import Place from "../models/place.model.js";
 import Admin from "../models/admin.model.js";
+import mongoose from "mongoose";
+import { deleteManyFromCloudinary, uploadManyToCloudinary } from "../utils/cloudinary.js";
 import {
     MAX_RADIUS,
     MAX_PLACE_NAME_LENGTH,
@@ -22,8 +24,20 @@ const isValidCoordinates = (lat, lng) => {
     );
 }
 
+const parseLocationInput = (location) => {
+    if (!location) return location;
+    if (typeof location !== "string") return location;
+
+    try {
+        return JSON.parse(location);
+    } catch {
+        throw new ApiError(400, "Invalid location payload");
+    }
+};
+
 const createPlace = asyncHandler(async (req, res) => {
     const { name, description, location, address, city, state, country, lat, lng } = req.body;
+    let uploadedImages = [];
 
     // Validation
     if (!name || !description) {
@@ -40,9 +54,11 @@ const createPlace = asyncHandler(async (req, res) => {
 
     let finalLat, finalLng;
 
+    const parsedLocation = parseLocationInput(location);
+
     // Case 1: GeoJSON
-    if (location?.type === "Point" && Array.isArray(location.coordinates)) {
-        [finalLng, finalLat] = location.coordinates;
+    if (parsedLocation?.type === "Point" && Array.isArray(parsedLocation.coordinates)) {
+        [finalLng, finalLat] = parsedLocation.coordinates;
     }
 
     // Case 2: GPS / manual lat-lng
@@ -64,6 +80,10 @@ const createPlace = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Address, city, and state are required");
     }
 
+    if (!req.files || req.files.length === 0) {
+        throw new ApiError(400, "At least one place image is required");
+    }
+
     // Duplicate check
     const existingPlace = await Place.findOne({
         name: { $regex: `^${name}$`, $options: "i" }
@@ -73,33 +93,66 @@ const createPlace = asyncHandler(async (req, res) => {
         throw new ApiError(409, "A place with this name already exists");
     }
 
-    // Create place
-    const place = await Place.create({
-        name: name.trim(),
-        description: description.trim(),
-        location: {
-            type: "Point",
-            coordinates: [finalLng, finalLat]
-        },
-        address: address.trim(),
-        city: city.trim(),
-        state: state.trim(),
-        country: country?.trim() || "India",
-        addedBy: req.user._id,
-        isVerified: false
-    });
+    const createPlaceDoc = async (session = null) => {
+        const createdPlace = new Place({
+            name: name.trim(),
+            description: description.trim(),
+            location: {
+                type: "Point",
+                coordinates: [finalLng, finalLat]
+            },
+            address: address.trim(),
+            city: city.trim(),
+            state: state.trim(),
+            country: country?.trim() || "India",
+            addedBy: req.user._id,
+            isVerified: false,
+            images: uploadedImages
+        });
 
-    // Add to  queue
-    await Admin.create({
-        type: "place",
-        targetModel: "Place",
-        targetId: place._id,
-        status: "pending"
-    });
+        await createdPlace.save(session ? { session } : undefined);
 
-    return res.status(201).json(
-        new ApiResponse(201, place, "Place submitted for admin review")
-    );
+        const adminRecord = new Admin({
+            type: "place",
+            targetModel: "Place",
+            targetId: createdPlace._id,
+            status: "pending"
+        });
+        await adminRecord.save(session ? { session } : undefined);
+
+        return createdPlace;
+    };
+
+    try {
+        uploadedImages = await uploadManyToCloudinary(req.files, { folder: "wanderpath/places" });
+
+        try {
+            const session = await mongoose.startSession();
+            try {
+                let createdPlace;
+                await session.withTransaction(async () => {
+                    createdPlace = await createPlaceDoc(session);
+                });
+
+                return res.status(201).json(
+                    new ApiResponse(201, createdPlace, "Place submitted for admin review")
+                );
+            } finally {
+                await session.endSession();
+            }
+        } catch (error) {
+            if (error.message?.includes("Transaction numbers are only allowed")) {
+                const createdPlace = await createPlaceDoc();
+                return res.status(201).json(
+                    new ApiResponse(201, createdPlace, "Place submitted for admin review")
+                );
+            }
+            throw error;
+        }
+    } catch (error) {
+        await deleteManyFromCloudinary(uploadedImages.map((img) => img.public_id));
+        throw error;
+    }
 });
 
 const getNearbyPlaces = asyncHandler(async (req, res) => {
@@ -190,6 +243,7 @@ const getPlaceById = asyncHandler(async (req, res) => {
 const updatePlace = asyncHandler(async (req, res) => {
     const { placeId } = req.params;
     const { name, description, location, address, city, state, country, lat, lng } = req.body;
+    const parsedLocation = parseLocationInput(location);
 
     const place = await Place.findById(placeId);
 
@@ -206,6 +260,8 @@ const updatePlace = asyncHandler(async (req, res) => {
     }
 
     let isModified = false;
+    const previousImages = place.images || [];
+    let newlyUploadedImages = [];
 
     
     if (name) {
@@ -232,15 +288,15 @@ const updatePlace = asyncHandler(async (req, res) => {
     }
 
     
-    if (location || (lat !== undefined && lng !== undefined)) {
+    if (parsedLocation || (lat !== undefined && lng !== undefined)) {
         let finalLat, finalLng;
 
         // Case 1: GeoJSON
-        if (location?.type === "Point" && Array.isArray(location.coordinates)) {
-            if (location.coordinates.length !== 2) {
+        if (parsedLocation?.type === "Point" && Array.isArray(parsedLocation.coordinates)) {
+            if (parsedLocation.coordinates.length !== 2) {
                 throw new ApiError(400, "Coordinates must be [lng, lat]");
             }
-            [finalLng, finalLat] = location.coordinates;
+            [finalLng, finalLat] = parsedLocation.coordinates;
         }
 
         // Case 2: lat/lng
@@ -291,7 +347,24 @@ const updatePlace = asyncHandler(async (req, res) => {
         place.isVerified = false;
     }
 
-    await place.save();
+    if (req.files && req.files.length > 0) {
+        newlyUploadedImages = await uploadManyToCloudinary(req.files, { folder: "wanderpath/places" });
+        place.images = newlyUploadedImages;
+        place.isVerified = false;
+    }
+
+    try {
+        await place.save();
+    } catch (error) {
+        if (newlyUploadedImages.length > 0) {
+            await deleteManyFromCloudinary(newlyUploadedImages.map((img) => img.public_id));
+        }
+        throw error;
+    }
+
+    if (newlyUploadedImages.length > 0) {
+        await deleteManyFromCloudinary(previousImages.map((img) => img.public_id));
+    }
 
     return res.status(200).json(
         new ApiResponse(200, place, "Place updated successfully")
